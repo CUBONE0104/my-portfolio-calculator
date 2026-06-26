@@ -45,7 +45,7 @@ if "fish_portfolio" not in st.session_state:
     st.session_state.fish_others_mv = 25.0
 
 # 4. 左側功能選單
-page = st.sidebar.radio("🌐 選擇計算器主題", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器"])
+page = st.sidebar.radio("🌐 選擇計算器主題", ["👦 卡拉的資產計算器", "👧 小魚寶寶的資產投資計算器"])
 
 if page == "👦 卡拉的資產計算器":
     user_label = "卡拉"
