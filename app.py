@@ -97,7 +97,7 @@ else:
     st.write("---")
 
     st.subheader("➕ 新增台股部位")
-    col_in1, col_in2 = st.columns()
+    col_in1, col_in2 = st.columns(2)
     with col_in1: input_symbol = st.text_input("第一步：請輸入台股股號 (如: 2330)", key=f"sym_{user_label}")
     with col_in2: check_btn = st.button("🔍 查詢股票資訊", key=f"btn_{user_label}")
 
