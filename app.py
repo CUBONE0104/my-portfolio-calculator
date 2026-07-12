@@ -30,7 +30,7 @@ JAPANESE_WORDS = [
 ]
 
 # =========================================================================
-# 📝 核心真題庫：言語知識（文字・語彙）(與您的圖片完全一致)
+# 📝 核心真題庫：言語知識（文字・語彙）
 # =========================================================================
 VOCAB_QUIZZES = [
     {
@@ -107,7 +107,7 @@ def get_fixed_daily_words(date_seed_str):
     return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
 
 # =========================================================================
-# 🌐 網頁版面渲染 (全新四功能大分頁，縮進徹底安全重構)
+# 🌐 網頁版面渲染 (純空白對齊版)
 # =========================================================================
 tab_study, tab_list, tab_word_quiz, tab_vocab_quiz = st.tabs([
     "📥 歷史單字隨身卡", 
@@ -192,7 +192,7 @@ with tab_list:
         st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後紀錄就會出現在這邊！")
 
 # -------------------------------------------------------------------------
-# 分頁三：單字小測驗（徹底修正 if 提交邏輯位置，安全不報錯）
+# 分頁三：單字小測驗 (架構極度簡化，消滅任何縮進報錯可能性)
 # -------------------------------------------------------------------------
 with tab_word_quiz:
     st.subheader("📝 日文單字實力大考驗 (N3-N5)")
@@ -219,7 +219,6 @@ with tab_word_quiz:
         
     random.shuffle(q_choices)
 
-    # 重構：將判斷邏輯拉出 with form 外面
     with st.form(key=f"word_quiz_form_{st.session_state.word_quiz_seed}"):
         if q_type == 0:
             st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
@@ -229,6 +228,5 @@ with tab_word_quiz:
         user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_w_{st.session_state.word_quiz_seed}")
         submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
 
-    # 完美對齊：移到與 with 齊平的外部區塊
-    if submit_btn:
-        if user_ans == correct_ans:
+    # 究極修復：將判斷式完全移出 st.form 區塊最外層，格式絕對不會再錯位！
+    if submit_btn and user_ans == correct_ans:
