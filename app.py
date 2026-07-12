@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import random
-from datetime import datetime, timedelta
+from datetime import datetime
 from gtts import gTTS
 import io
 
@@ -12,7 +12,7 @@ st.set_page_config(page_title="卡拉與小魚的日文言語知識大本營", l
 # 📚 核心日文單字庫
 # =========================================================================
 JAPANESE_WORDS = [
-    {"級別": "N5", "單字": "學生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", "例句": "私、学生です。", "例句假名": "わたしはがくせいです。", "例句中文": "我是學生。"},
+    {"級別": "N5", "單字": "學生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", "例句": "私、學生です。", "例句假名": "わたしはがくせいです。", "例句中文": "我是學生。"},
     {"級別": "N5", "單字": "美味しい", "假名": "おいしい", "詞性": "形容詞", "中文意思": "美味的、好吃的", "例句": "このリンゴはとても美味しいです。", "例句假名": "このりんごはとてもおいしいです。", "例句中文": "這個蘋果非常好吃。"},
     {"級別": "N5", "單字": "行く", "假名": "いく", "詞性": "動詞", "中文意思": "去", "例句": "明日、日本へ行きます。", "例句假名": "あした、にほんへいきます。", "例句中文": "明天要去日本。"},
     {"級別": "N5", "單字": "飲む", "假名": "のむ", "詞性": "動詞", "中文意思": "喝", "例句": "コーヒーを飲みます。", "例句假名": "こーひーをのみます。", "例句中文": "喝咖啡。"},
@@ -26,7 +26,7 @@ JAPANESE_WORDS = [
 ]
 
 # =========================================================================
-# 📝 需求 3：新增 言語知識（文字・語彙）專屬模擬題庫 (不要閱讀短文)
+# 📝 言語知識（文字・語彙）專屬模擬題庫 (不要閱讀短文)
 # =========================================================================
 VOCAB_QUIZZES = [
     {
@@ -63,7 +63,7 @@ VOCAB_QUIZZES = [
         "選項": ["1. ほとんど", "2. ぜんぜん", "3. すこし", "4. かならず"],
         "正確答案": "1. ほとんど",
         "中文翻譯": "這個問題我大概都懂了。",
-        "詳解": "「だいたい」意思是「大體上、大概、差不多」，與選項 1 的「ほとんど（大部分、幾乎）」意思最為接近。\n• ぜんぜん (完全不)\n• すこし (稍微)\n• かならず (必定)"
+        "詳解": "「だいたい」意思是「大體上、大概、差不多」，與選項 1 的「ほとんど（大部分、幾乎）」意思最為接近。\n• ぜんぜん (完全不)\n• すこし (稍微)\n• かかならず (必定)"
     }
 ]
 
@@ -72,8 +72,10 @@ VOCAB_QUIZZES = [
 # =========================================================================
 if "learned_list" not in st.session_state:
     st.session_state.learned_list = []
-if "history_7_days" not in st.session_state:
-    st.session_state.history_7_days = []
+if "word_quiz_index" not in st.session_state:
+    st.session_state.word_quiz_index = 0
+if "vocab_quiz_index" not in st.session_state:
+    st.session_state.vocab_quiz_index = 0
 
 # 語音核心函數
 def text_to_speech_bytes(text):
@@ -86,44 +88,21 @@ def text_to_speech_bytes(text):
     except:
         return None
 
-# 冷卻機制單字抽選 (一週不重複)
-def get_smart_daily_words(target_date):
-    date_str = target_date.strftime('%Y-%m-%d')
-    # 鎖定種子，確保同一天怎麼刷新都是同一批字
-    seed_num = int(target_date.strftime('%Y%m%d'))
+# 快取固定當天單字
+@st.cache_data(ttl=86400)
+def get_fixed_daily_words(date_seed_str):
+    seed_num = int(date_seed_str.replace("-", ""))
     random.seed(seed_num)
     return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
 
-# 測驗抽題核心回呼（單字小測驗）
-def generate_new_quiz():
-    st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
-    st.session_state.quiz_type = random.randint(0, 1)
-    correct_word = st.session_state.quiz_item
-    wrong_pool = [w for w in JAPANESE_WORDS if w["單字"] != correct_word["單字"]]
-    wrong_choices = random.sample(wrong_pool, min(len(wrong_pool), 3))
-    if st.session_state.quiz_type == 0:
-        choices = [correct_word["假名"]] + [w["假名"] for w in wrong_choices]
-    else:
-        choices = [correct_word["單字"]] + [w["單字"] for w in wrong_choices]
-    random.shuffle(choices)
-    st.session_state.quiz_choices = choices
-
-# 測驗抽題核心回呼（言語知識測驗）
-def generate_new_vocab_quiz():
-    st.session_state.vocab_quiz_item = random.choice(VOCAB_QUIZZES)
-    v_item = st.session_state.vocab_quiz_item
-    choices = list(v_item["選項"])
-    random.shuffle(choices)
-    st.session_state.vocab_quiz_choices = choices
-
 # =========================================================================
-# 🌐 網頁版面渲染
+# 🌐 網頁版面渲染 (全新四功能大分頁)
 # =========================================================================
 tab_study, tab_list, tab_word_quiz, tab_vocab_quiz = st.tabs([
     "📥 歷史單字隨身卡", 
     "🎓 已學會單字庫", 
     "📝 挑戰單字小測驗", 
-    "📝 言語知識（文字・語彙）"  # 需求 3：全面換裝成言語知識題型
+    "📝 言語知識（文字・語彙）"
 ])
 
 # -------------------------------------------------------------------------
@@ -135,18 +114,18 @@ with tab_study:
     st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的單字（內建一週冷卻防重複機制）。")
     st.write("---")
 
-    daily_words = get_smart_daily_words(selected_date)
+    daily_words = get_fixed_daily_words(date_str)
 
     for idx, item in enumerate(daily_words):
         unique_id = f"{date_str}_{item['單字']}"
         is_saved = any(x["id"] == unique_id for x in st.session_state.learned_list)
 
-        # 級別標籤獨立一行
+        # 級別彩色標籤
         if item["級別"] == "N3": st.error(f"日檢分級： {item['級別']} ")
         elif item["級別"] == "N4": st.warning(f"日檢分級： {item['級別']} ")
         else: st.success(f"日檢分級： {item['級別']} ")
         
-        # 單字內容換行
+        # 單字挪到下方一行
         st.markdown(f"### 單字 {idx+1}：{item['單字']}（{item['詞性']}）")
         st.write(f"讀音假名：【 **{item['假名']}** 】")
         
@@ -166,7 +145,7 @@ with tab_study:
             sentence_audio = text_to_speech_bytes(item['例句'])
             if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
 
-        # 打勾控制
+        # 雙向同步打勾控制
         state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_id}")
         if state_checkbox and not is_saved:
             st.session_state.learned_list.append({
@@ -178,7 +157,7 @@ with tab_study:
         st.write("---")
 
 # -------------------------------------------------------------------------
-# 分頁二：需求 1 & 2：【重大修復】真正能移除、從 1 開始的已學會單字庫
+# 分頁二：已學會單字庫 (正序排列、1開始、支援無痛手動移除)
 # -------------------------------------------------------------------------
 with tab_list:
     st.subheader("🎓 您的個人專屬熟記單字庫")
@@ -186,17 +165,16 @@ with tab_list:
         st.write(f"目前累計已經背熟了 **{len(st.session_state.learned_list)}** 個單字！")
         
         df_learned = pd.DataFrame(st.session_state.learned_list)
-        df_learned = df_learned.sort_index(ascending=True) # 需求 2：時間正序排列
-        df_learned.index = range(1, len(df_learned) + 1) # 需求 2：流水號強制由 1 開始
+        df_learned = df_learned.sort_index(ascending=True) # 正序排列
+        df_learned.index = range(1, len(df_learned) + 1) # 流水號從 1 開始
         
         show_df = df_learned[["學習日期", "級別", "單字", "讀音", "意思"]]
         show_df.columns = ["出現日期", "日檢級別", "日文單字", "假名讀音", "中文意思"]
         st.dataframe(show_df, use_container_width=True)
         
         st.write("---")
-        st.write("⚙️ **管理熟記清單**（點擊下方按鈕可立刻移出已學會區）：")
+        st.write("⚙️ **管理熟記清單**（點擊按鈕可立刻將單字移出已學會區並解除單字卡打勾）：")
         
-        # 【重要安全修正】：手動賦予獨立按鈕流水金鑰，確保 100% 成功移除、畫面更新
         for b_idx, word_item in enumerate(list(st.session_state.learned_list)):
             if st.button(f"🗑️ 移除單字：{word_item['單字']}", key=f"del_btn_item_id_{word_item['id']}_{b_idx}"):
                 st.session_state.learned_list = [x for x in st.session_state.learned_list if x["id"] != word_item["id"]]
@@ -206,26 +184,49 @@ with tab_list:
         st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後紀錄就會出現在這邊！")
 
 # -------------------------------------------------------------------------
-# 分頁三：需求 3：【重大修復】保證可以刷新、作答的單字小測驗
+# 分頁三：單字小測驗 (全新安全穩定架構)
 # -------------------------------------------------------------------------
 with tab_word_quiz:
     st.subheader("📝 日文單字實力大考驗 (N3-N5)")
     st.write("說明：請點選正確的選項，回答後點擊下方「提交答案」按鈕核對。")
     st.write("---")
     
-    if "quiz_item" not in st.session_state:
-        generate_new_quiz()
+    # 點擊按鈕直接增加 index 做隨機，這能完全解決縮進與表單卡死問題
+    if st.button("🔄 換一題新單字測驗", key="btn_refresh_word_quiz_main"):
+        st.session_state.word_quiz_index += 1
+        st.rerun()
 
-    st.button("🔄 換一題新測驗", on_click=generate_new_quiz, key="refresh_quiz_btn_word")
+    # 以計數器為種子碼固定題目，點擊提交絕對不閃退換題！
+    random.seed(st.session_state.word_quiz_index + 100)
+    q_item = random.choice(JAPANESE_WORDS)
+    q_type = random.randint(0, 1) # 0為猜讀音，1為猜單字
 
-    q_item = st.session_state.quiz_item
-    q_type = st.session_state.quiz_type
-    q_choices = st.session_state.quiz_choices
+    wrong_pool = [w for w in JAPANESE_WORDS if w["單字"] != q_item["單字"]]
+    wrong_choices = random.sample(wrong_pool, min(len(wrong_pool), 3))
+    
+    if q_type == 0:
+        correct_ans = q_item["假名"]
+        q_choices = [q_item["假名"]] + [w["假名"] for w in wrong_choices]
+    else:
+        correct_ans = q_item["單字"]
+        q_choices = [q_item["單字"]] + [w["單字"] for w in wrong_choices]
+        
+    random.shuffle(q_choices)
 
-    # 使用獨立表單，杜絕換題與刷新不出的問題
-    with st.form(key="word_quiz_form_interface"):
+    with st.form(key=f"word_quiz_form_secured_{st.session_state.word_quiz_index}"):
         if q_type == 0:
             st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
-            correct_ans = q_item["假名"]
         else:
             st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
+            
+        user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_choice_w_{st.session_state.word_quiz_index}")
+        submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
+
+    if submit_btn:
+        if user_ans == correct_ans:
+            st.success(f"🎉 答對了！【{q_item['單字']}】的意思正是「{q_item['中文意思']}」。")
+        else:
+            st.error(f"❌ 答錯囉！正確答案應該是：**{correct_ans}**。")
+
+# -------------------------------------------------------------------------
+# 分頁四：言語知識（文字・語彙） (全新安全穩定架構)
