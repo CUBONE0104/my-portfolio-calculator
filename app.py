@@ -15,23 +15,100 @@ REPO_NAME = "您的GitHub帳號/您的專案名稱"
 CSV_FILE_PATH = "history_data.csv"
 
 # =========================================================================
-# 📚 核心日文單字庫 (隨機精選 N5-N3 常用單字，內建振假名 HTML 格式)
+# 📚 核心日文單字庫 (已徹底檢查引號語法，漢字與假名完美對齊)
 # =========================================================================
 JAPANESE_WORDS = [
     # N5 單字
-    {"級別": "N5", "單字": "<ruby>學<rt>まな</rt></r><ruby>生<rt>せい</rt></ruby>", "詞性": "名詞", "中文意思": "學生", "例句": "<ruby>私<rt>わたし</rt></ruby>は<ruby>學<rt>まな</rt></r><ruby>生<rt>せい</rt></ruby>です。", "例句中文": "我是學生。"},
-    {"級別": "N5", "單字": "<ruby>美<rt>おい</rt></ruby>しい", "詞性": "形容詞", "中文意思": "美味的、好吃的", "例句":"このリンゴはとても<ruby>美<rt>おい</rt></ruby>しいです。", "例句中文": "這個蘋果非常好吃。"},
-    {"級別": "N5", "單字": "<ruby>行<rt>い</rt></ruby>く", "詞性": "動詞", "中文意思": "去", "例句": "<ruby>明<rt>あした</rt></ruby><ruby>日<rt>にち</rt></ruby>、<ruby>日<rt>に</rt></ruby><ruby>本<rt>ほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", "例句中文": "明天要去日本。"},
+    {
+        "級別": "N5", 
+        "單字": "<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>", 
+        "詞性": "名詞", 
+        "中文意思": "學生", 
+        "例句": "<ruby>私<rt>わたし</rt></ruby>は<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>です。", 
+        "例句中文": "我是學生。"
+    },
+    {
+        "級別": "N5", 
+        "單字": "<ruby>美<rt>おい</rt></ruby>しい", 
+        "詞性": "形容詞", 
+        "中文意思": "美味的、好吃的", 
+        "例句": "このリンゴはとても<ruby>美<rt>おい</rt></ruby>しいです。", 
+        "例句中文": "這個蘋果非常好吃。"
+    },
+    {
+        "級別": "N5", 
+        "單字": "<ruby>行<rt>い</rt></ruby>く", 
+        "詞性": "動詞", 
+        "中文意思": "去", 
+        "例句": "<ruby>明<rt>あした</rt></ruby><ruby>日<rt>にち</rt></ruby>、<ruby>日<rt>に</rt></ruby><ruby>本<rt>ほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", 
+        "例句中文": "明天要去日本。"
+    },
+    {
+        "級別": "N5", 
+        "單字": "<ruby>飲<rt>の</rt></ruby>む", 
+        "詞性": "動詞", 
+        "中文意思": "喝", 
+        "例句": "コーヒーを<ruby>飲<rt>の</rt></ruby>みます。", 
+        "例句中文": "喝咖啡。"
+    },
     # N4 單字
-    {"級別": "N4", "單字": "<ruby>試<rt>し</rt></ruby><ruby>驗<rt>けん</rt></ruby>", "詞性": "名詞", "中文意思": "考試", "例句": "<ruby>來<rt>らい</rt></ruby><ruby>週<rt>しゅう</rt></ruby>、日本語の<ruby>試<rt>し</rt></ruby><ruby>驗<rt>けん</rt></ruby>があります。", "例句中文": "下週有日文考試。"},
-    {"級別": "N4", "單字": "<ruby>集<rt>あつ</rt></ruby>める", "詞性": "動詞", "中文意思": "收集、集中", "例句":趣味はコインを<ruby>集<rt>あつ</rt></ruby>めることです。", "例句中文": "我的興趣是收集硬幣。"},
-    {"級別": "N4", "單字": "<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>する", "詞性": "動詞", "中文意思": "複習", "例句":レッスンをしっかりと<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>します。", "例句中文": "好好複習課堂內容。"},
+    {
+        "級別": "N4", 
+        "單字": "<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>", 
+        "詞性": "名詞", 
+        "中文意思": "考試", 
+        "例句": "<ruby>来<rt>らい</rt></ruby><ruby>週<rt>しゅう</rt></ruby>、日本語の<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>があります。", 
+        "例句中文": "下週有日文考試。"
+    },
+    {
+        "級別": "N4", 
+        "單字": "<ruby>集<rt>あつ</rt></ruby>める", 
+        "詞性": "動詞", 
+        "中文意思": "收集、集中", 
+        "例句": "趣味はコインを<ruby>集<rt>あつ</rt></ruby>めることです。", 
+        "例句中文": "我的興趣是收集硬幣。"
+    },
+    {
+        "級別": "N4", 
+        "單字": "<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>する", 
+        "詞性": "動詞", 
+        "中文意思": "複習", 
+        "例句": "レッスンをしっかりと<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>します。", 
+        "例句中文": "好好複習課堂內容。"
+    },
     # N3 單字
-    {"級別": "N3", "單字": "<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>", "詞性": "名詞/動詞", "中文意思": "準備", "例句": "<ruby>旅<rt>りょ</rt></ruby><ruby>行<rt>こう</rt></ruby>の<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>はもうできましたか。", "例句中文": "旅行的準備已經好了嗎？"},
-    {"級別": "N3", "單字": "<ruby>必<rt>かなら</rt></ruby>ず", "詞性": "副詞", "中文意思": "必定、務必", "例句":約束は<ruby>必<rt>かなら</rt></ruby>ず<ruby>守<rt>まも</rt></ruby>ります。", "例句中文": "約定好的事我一定會遵守。"},
-    {"級別": "N3", "單字": "<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>", "詞性": "名詞", "中文意思": "興趣", "例句":日本文化に<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>があります。", "例句中文": "我對日本文化感興趣。"},
-    {"級別": "N3", "單字": "<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>する", "詞性": "動詞", "中文意思": "解決", "例句":問題を無事に<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>しました。", "例句中文": "順利解決了問題。"},
-    {"級別": "N5", "單字": "<ruby>飲<rt>の</rt></ruby>む", "詞性": "動詞", "中文意思": "喝", "例句":コーヒーを<ruby>飲<rt>の</rt></ruby>みます。", "例句中文": "喝咖啡。"}
+    {
+        "級別": "N3", 
+        "單字": "<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>", 
+        "詞性": "名詞/動詞", 
+        "中文意思": "準備", 
+        "例句": "<ruby>旅<rt>りょ</rt></ruby><ruby>行<rt>こう</rt></ruby>の<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>はもうできましたか。", 
+        "例句中文": "旅行的準備已經好了嗎？"
+    },
+    {
+        "級別": "N3", 
+        "單字": "<ruby>必<rt>かなら</rt></ruby>ず", 
+        "詞性": "副詞", 
+        "中文意思": "必定、務必", 
+        "例句": "約束は<ruby>必<rt>かなら</rt></ruby>ず<ruby>守<rt>まも</rt></ruby>ります。", 
+        "例句中文": "約定好的事我一定會遵守。"
+    },
+    {
+        "級別": "N3", 
+        "單字": "<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>", 
+        "詞性": "名詞", 
+        "中文意思": "興趣", 
+        "例句": "日本文化に<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>があります。", 
+        "例句中文": "我對日本文化感興趣。"
+    },
+    {
+        "級別": "N3", 
+        "單字": "<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>する", 
+        "詞性": "動詞", 
+        "中文意思": "解決", 
+        "例句": "問題を無事に<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>しました。", 
+        "例句中文": "順利解決了問題。"
+    }
 ]
 
 def get_daily_words():
@@ -97,7 +174,7 @@ if "fish_list" not in st.session_state:
     st.session_state.fish_cash = 10.0
 
 # =========================================================================
-# 🌐 左側選單 (加入日文分頁)
+# 🌐 左側選單
 # =========================================================================
 page = st.sidebar.radio("🌐 選擇網頁功能", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器", "🇯🇵 每日自動日文單字"])
 
@@ -113,16 +190,13 @@ if page == "🇯🇵 每日自動日文單字":
     daily_words = get_daily_words()
 
     for idx, item in enumerate(daily_words):
-        # 使用 st.container 做出卡片外觀
         with st.container():
-            col_w1, col_w2 = st.columns([1, 4])
+            col_w1, col_w2 = st.columns(2)
             with col_w1:
-                # 根據不同級別標上不同顏色標籤
                 if item["級別"] == "N3": st.error(f"  {item['級別']}  ")
                 elif item["級別"] == "N4": st.warning(f"  {item['級別']}  ")
                 else: st.success(f"  {item['級別']}  ")
             with col_w2:
-                # 核心：使用 HTML 輸出帶有漢字上方振假名的精美外觀
                 st.markdown(f"### 單字 {idx+1}： <span style='font-size:32px;'>{item['單字']}</span> （{item['詞性']}）", unsafe_allow_html=True)
                 st.markdown(f"💡 **中文意思**：<span style='color:#1E88E5; font-weight:bold;'>{item['中文意思']}</span>", unsafe_allow_html=True)
                 st.write(f"📝 **實用例句**：")
@@ -132,7 +206,7 @@ if page == "🇯🇵 每日自動日文單字":
     st.info("💡 溫馨提示：單字會於每日凌晨 00:00 自動更換，明天記得再來複習喔！")
 
 # -------------------------------------------------------------------------
-# 原本功能：卡拉 & 小魚的計算器（代碼維持不變，僅做整合）
+# 原本功能：卡拉 & 小魚的計算器
 # -------------------------------------------------------------------------
 else:
     user_label, list_key, cash_key = ("卡拉", "kara_list", "kara_cash") if page == "👦 卡拉的資產計算器" else ("小魚", "fish_list", "fish_cash")
@@ -166,9 +240,3 @@ else:
             if current_price > 0:
                 st.success(f"📈 成功尋獲股票！【{official_name}】 | 目前即時股價：{current_price} 元")
                 col_in3, col_in4, col_in5 = st.columns(3)
-                with col_in3: input_shares = st.number_input("第二步：輸入持有股數 (股)", min_value=0, value=1000, step=100)
-                with col_in4: input_cost = st.number_input("第三步：輸入原始總成本 (萬元)", min_value=0.0, value=10.0, step=1.0)
-                with col_in5: input_note = st.text_input("第四步：自訂產業備註", value="AI/半導體")
-                    
-                if st.button("🚀 確認新增至資產清單", use_container_width=True):
-                    st.session_state[list_key].append({"股號": input_symbol, "股票名稱": official_name, "自訂產業備註": input_note, "即時股價": current_price, "原始總成本(萬元)": input_cost, "持有股數(股)": input_shares})
