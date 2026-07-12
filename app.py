@@ -5,7 +5,7 @@ from datetime import datetime
 from gtts import gTTS
 import io
 
-# 1. 網頁基本設定 
+# 1. 網頁基本設定
 st.set_page_config(page_title="卡拉與小魚的日文言語知識大本營", layout="centered", page_icon="🇯🇵")
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
@@ -64,10 +64,10 @@ VOCAB_QUIZZES = [
         "級別": "N3",
         "題目類型": "問題1 _のことばの読み方として最もよいものを、1・2・3・4から一つえらびなさい。",
         "題目文": "社会には【共通】のルールがあります。",
-        "選項": ["1きょうつ", "2 こうつつ", "3 きょうつう", "4 こうつ"],
+        "選項": ["1 きょうつ", "2 こうつつ", "3 きょうつう", "4 こうつ"],
         "正確答案": "3 きょうつう",
         "中文翻譯": "社會上有共同的規則。",
-        "詳解": "「共」讀作長音「きょう」，「通」讀作長音「つう」，結合在一起就是長音組合「きょうつう」。"
+        "詳解": "「共」讀作長音「きょう」，「通()」讀作長音「つう」，結合在一起就是長音組合「きょうつう」。"
     },
     {
         "級別": "N3",
@@ -107,7 +107,7 @@ def get_fixed_daily_words(date_seed_str):
     return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
 
 # =========================================================================
-# 🌐 網頁版面渲染 (純空白對齊版)
+# 🌐 網頁版面渲染 (極簡零錯誤結構版)
 # =========================================================================
 tab_study, tab_list, tab_word_quiz, tab_vocab_quiz = st.tabs([
     "📥 歷史單字隨身卡", 
@@ -192,7 +192,7 @@ with tab_list:
         st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後紀錄就會出現在這邊！")
 
 # -------------------------------------------------------------------------
-# 分頁三：單字小測驗 (架構極度簡化，消滅任何縮進報錯可能性)
+# 分頁三：單字小測驗 (徹底拆除 st.form，使用極簡平面結構)
 # -------------------------------------------------------------------------
 with tab_word_quiz:
     st.subheader("📝 日文單字實力大考驗 (N3-N5)")
@@ -219,14 +219,14 @@ with tab_word_quiz:
         
     random.shuffle(q_choices)
 
-    with st.form(key=f"word_quiz_form_{st.session_state.word_quiz_seed}"):
-        if q_type == 0:
-            st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
-        else:
-            st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
-            
-        user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_w_{st.session_state.word_quiz_seed}")
-        submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
+    if q_type == 0:
+        st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
+    else:
+        st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
+        
+    user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_w_{st.session_state.word_quiz_seed}")
+    submit_btn = st.button("🎯 提交單字測驗答案", use_container_width=True, key=f"sub_btn_w_{st.session_state.word_quiz_seed}")
 
-    # 究極修復：將判斷式完全移出 st.form 區塊最外層，格式絕對不會再錯位！
     if submit_btn and user_ans == correct_ans:
+        st.success(f"🎉 答對了！【{q_item['單字']}】的意思正是「{q_item['中文意思']}」。")
+    if submit_btn and user_ans != correct_ans:
