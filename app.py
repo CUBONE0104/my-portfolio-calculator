@@ -5,7 +5,7 @@ from datetime import datetime
 from gtts import gTTS
 import io
 
-# 1. 網頁基本設定
+# 1. 網頁基本設定 
 st.set_page_config(page_title="卡拉與小魚的日文言語知識大本營", layout="centered", page_icon="🇯🇵")
 
 GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
