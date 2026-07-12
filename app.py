@@ -3,7 +3,7 @@ import yfinance as yf
 import pandas as pd
 import requests
 import base64
-import random 
+import random
 from datetime import datetime
 import plotly.express as px
 from gtts import gTTS
