@@ -94,7 +94,7 @@ def get_taiwan_stock_info(symbol):
     except: return 0.0, "查無此股號"
 
 # =========================================================================
-# 🔄 狀態初始化 (避免跨分頁數據干擾)
+# 🔄 狀態初始化 (獨立運行，絕不干擾)
 # =========================================================================
 if "kara_list" not in st.session_state:
     st.session_state.kara_list = [
@@ -106,11 +106,11 @@ if "fish_list" not in st.session_state:
     st.session_state.fish_list = [{"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 30.0, "持有股數(股)": 1500}]
     st.session_state.fish_cash = 10.0
 
-# 🎓 已學會單字列表（改用列表儲存，確保可以依序依時間由舊到新正序排列）
+# 🎓 已學會單字列表
 if "learned_history_list" not in st.session_state:
     st.session_state.learned_history_list = []
 
-# 📝 小測驗換題核心回呼（完全解決測驗卡死問題）
+# 📝 小測驗換題回呼函式
 def generate_new_quiz():
     st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
     st.session_state.quiz_type = random.randint(0, 1)
@@ -123,7 +123,6 @@ def generate_new_quiz():
         choices = [correct_word["單字"]] + [w["單字"] for w in wrong_choices]
     random.shuffle(choices)
     st.session_state.quiz_choices = choices
-    st.session_state.quiz_submitted = False
 
 # =========================================================================
 # 🌐 左側主功能選單
@@ -140,7 +139,7 @@ if page == "🇯🇵 每日自動日文單字":
     with tab_study:
         selected_date = st.date_input("📅 選擇學習或複習的日期：", datetime.today())
         date_str = selected_date.strftime('%Y-%m-%d')
-        st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的精選單字卡。")
+        st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的精選單字卡（單日絕對不重複）。")
         st.write("---")
 
         daily_words = get_fixed_daily_words(date_str)
@@ -148,16 +147,19 @@ if page == "🇯🇵 每日自動日文單字":
         for idx, item in enumerate(daily_words):
             unique_id = f"{date_str}_{item['單字']}"
             
-            # 檢查目前清單中是否已經包含這顆字
+            # 檢查是否已存在已學會清單中
             is_saved = any(x["id"] == unique_id for x in st.session_state.learned_history_list)
 
+            # 需求 1：排版修正，分級彩色標籤獨立在第一行
             if item["級別"] == "N3": st.error(f"日檢分級： {item['級別']} ")
             elif item["級別"] == "N4": st.warning(f"日檢分級： {item['級別']} ")
             else: st.success(f"日檢分級： {item['級別']} ")
             
+            # 單字被移至正下方第二行，完全不擠在一起
             st.markdown(f"### 單字 {idx+1}：{item['單字']}（{item['詞性']}）")
             st.write(f"讀音假名：【 **{item['假名']}** 】")
             
+            # 需求 2：語音調尺寸大幅限縮小化排版
             col_audio_ui, _ = st.columns(2)
             with col_audio_ui:
                 word_audio = text_to_speech_bytes(item['單字'])
@@ -169,12 +171,13 @@ if page == "🇯🇵 每日自動日文單字":
             st.caption(f"（讀音：{item['例句假名']}）")
             st.write(f"➜ 中文：{item['例句中文']}")
             
+            # 例句語音調縮小化排版
             col_sentence_ui, _ = st.columns(2)
             with col_sentence_ui:
                 sentence_audio = text_to_speech_bytes(item['例句'])
                 if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
 
-            # 需求 4：互動打勾 (勾選加入，取消則動態剔除已學會區)
+            # 需求 4：互動打勾雙向記憶（勾選加入，取消則動態剔除清單）
             state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_id}")
             
             if state_checkbox and not is_saved:
@@ -186,22 +189,20 @@ if page == "🇯🇵 每日自動日文單字":
                 
             st.write("---")
 
-    # 需求 1 & 2：已學會專區 (由舊到新正序、新增流水號編號、內建獨立移除按鈕)
+    # 📥 需求 1 & 2：已學會專區（從1開始排列、正序遞增、附帶獨立一鍵撤銷按鈕）
     with tab_list:
         st.subheader("🎓 您的個人專屬熟記單字庫")
         if st.session_state.learned_history_list:
             st.write(f"恭喜！您與小魚目前累計已經背熟了 **{len(st.session_state.learned_history_list)}** 個單字！")
             
-            # 從 session 列表中提取並轉換成 DataFrame
             df_learned = pd.DataFrame(st.session_state.learned_history_list)
             
-            # 需求 2：對齊時間排列（由早到晚，第一個學會的在最上面，依序往下）
+            # 需求 2：依照歷史時間先後順序正序向下排列（最早學會的在最上面）
             df_learned = df_learned.sort_index(ascending=True)
             
-            # 需求 2：將流水號強制設定為從 1 開始遞增
+            # 需求 2：將左側序號重新包裝，強制從 1 開始依序排列
             df_learned.index = range(1, len(df_learned) + 1)
             
-            # 表格美化重整呈現
             show_df = df_learned[["學習日期", "級別", "單字", "讀音", "意思"]]
             show_df.columns = ["出現日期", "日檢級別", "日文單字", "假名讀音", "中文意思"]
             st.dataframe(show_df, use_container_width=True)
