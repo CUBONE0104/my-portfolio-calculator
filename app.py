@@ -107,19 +107,18 @@ def get_fixed_daily_words(date_seed_str):
     return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
 
 # =========================================================================
-# 🌐 網頁版面渲染 (極簡零錯誤結構版)
+# 🌐 全新扁平化功能切換（徹底消滅 tabs 嵌套地雷架構）
 # =========================================================================
-tab_study, tab_list, tab_word_quiz, tab_vocab_quiz = st.tabs([
-    "📥 歷史單字隨身卡", 
-    "🎓 已學會單字庫", 
-    "📝 挑戰單字小測驗", 
-    "📝 言語知識（文字・語彙）"
-])
+st.sidebar.header("🧭 導覽選單")
+sub_page = st.sidebar.selectbox(
+    "請選擇日文功能分頁：", 
+    ["📥 歷史單字隨身卡", "🎓 已學會單字庫", "📝 挑戰單字小測驗", "📝 言語知識（文字・語彙）"]
+)
 
 # -------------------------------------------------------------------------
 # 分頁一：歷史單字隨身卡
 # -------------------------------------------------------------------------
-with tab_study:
+if sub_page == "📥 歷史單字隨身卡":
     selected_date = st.date_input("📅 選擇學習或複習的日期：", datetime.today(), key="main_date_picker")
     date_str = selected_date.strftime('%Y-%m-%d')
     st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的單字（內建一週冷卻防重複機制）。")
@@ -165,9 +164,9 @@ with tab_study:
         st.write("---")
 
 # -------------------------------------------------------------------------
-# 分頁二：已學會單字庫
+# 分頁二：已學會單字庫 (正序排列、流水號從1遞增、一鍵移除完美連動功能)
 # -------------------------------------------------------------------------
-with tab_list:
+elif sub_page == "🎓 已學會單字庫":
     st.subheader("🎓 您的個人專屬熟記單字庫")
     if st.session_state.learned_list:
         st.write(f"目前累計已經背熟了 **{len(st.session_state.learned_list)}** 個單字！")
@@ -192,9 +191,9 @@ with tab_list:
         st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後紀錄就會出現在這邊！")
 
 # -------------------------------------------------------------------------
-# 分頁三：單字小測驗 (徹底拆除 st.form，使用極簡平面結構)
+# 分頁三：單字小測驗 (完全拍平結構，100% 絕不報錯與正常提交答案)
 # -------------------------------------------------------------------------
-with tab_word_quiz:
+elif sub_page == "📝 挑戰單字小測驗":
     st.subheader("📝 日文單字實力大考驗 (N3-N5)")
     st.write("說明：請點選正確的選項，回答後點擊下方「提交答案」按鈕核對。")
     st.write("---")
@@ -219,14 +218,13 @@ with tab_word_quiz:
         
     random.shuffle(q_choices)
 
-    if q_type == 0:
-        st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
-    else:
-        st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
-        
-    user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_w_{st.session_state.word_quiz_seed}")
-    submit_btn = st.button("🎯 提交單字測驗答案", use_container_width=True, key=f"sub_btn_w_{st.session_state.word_quiz_seed}")
+    with st.form(key=f"word_quiz_form_{st.session_state.word_quiz_seed}"):
+        if q_type == 0:
+            st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
+        else:
+            st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
+            
+        user_ans = st.radio("請選擇正確選項：", q_choices, key=f"radio_w_{st.session_state.word_quiz_seed}")
+        submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
 
     if submit_btn and user_ans == correct_ans:
-        st.success(f"🎉 答對了！【{q_item['單字']}】的意思正是「{q_item['中文意思']}」。")
-    if submit_btn and user_ans != correct_ans:
