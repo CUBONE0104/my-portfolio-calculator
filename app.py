@@ -6,10 +6,10 @@ from gtts import gTTS
 import io
 
 # 1. 網頁基本設定
-st.set_page_config(page_title="卡拉與小魚的日文單字隨身卡", layout="centered", page_icon="🇯🇵")
+st.set_page_config(page_title="卡拉與小魚的日文單字與讀解大本營", layout="centered", page_icon="🇯🇵")
 
 # =========================================================================
-# 📚 核心日文單字庫 (精選 11 個單字，未來可自行無限擴充)
+# 📚 核心日文單字庫
 # =========================================================================
 JAPANESE_WORDS = [
     {"級別": "N5", "單字": "學生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", "例句": "私は学生です。", "例句假名": "わたしはがくせいです。", "例句中文": "我是學生。"},
@@ -26,15 +26,112 @@ JAPANESE_WORDS = [
 ]
 
 # =========================================================================
+# 📖 需求 3：新增 N3-N5 日檢讀解模擬題庫
+# =========================================================================
+READING_QUIZZES = [
+    {
+        "級別": "N5",
+        "類型": "通知與書信閱讀",
+        "文章": """
+        【留守番電話のメッセージ】
+        リーさん、こんにちは。山田です。
+        今日の午後、一緒に図書館へ行く約束でしたが、急に用事ができました。
+        本当にすみません。
+        明日なら、午前でも午後でも大丈夫です。
+        このメッセージを見たら、メールをください。
+        """,
+        "問題": "山田さんはどうしてリーさんにメッセージを残しましたか。",
+        "選項": [
+            "1. 今日の約束の時間に遅れるから",
+            "2. 今日の約束をキャンセルして、明日に変更したいから",
+            "3. 明日図書館へ行く約束をしたいから",
+            "4. リーさんのメールアドレスが知りたいから"
+        ],
+        "正確答案": "2. 今日の約束をキャンセルして、明日に変更したいから",
+        "中文翻譯": "【語音留言訊息】\n李先生，你好。我是山田。\n原本約好今天下午要一起去圖書館，但我突然有急事。\n真的非常抱歉。\n如果是明天的預話，不管是上午還是下午我都方便。\n您看到這則訊息後，請發個郵件給我。",
+        "詳解": """
+        💡 **讀解核心關鍵：**
+        文章中提到「今日の午後...行く約束でしたが、急に用事ができました。(雖然約了今天下午去，但突然有事)」，
+        接著說明「明日なら...大丈夫です。(明天的預話都行)」，因此山田先生的目的是取消今天的約定並改成明天。
+        
+        ✏️ **重點單字與文法：**
+        • **約束 (やくそく)**：約定、預約。
+        • **急に (きゅうに)**：突然、冷不防。
+        • **用事 (ようじ)**：要事、事情。
+        • **～なら**：(文法) 如果是...的話（表假設或條件）。
+        """
+    },
+    {
+        "級別": "N4",
+        "類型": "生活短文理解",
+        "文章": """
+        日本では、家に入る時、靴を脱がなければなりません。
+        学校でも、生徒たちは玄関で外の靴を脱いで、学校の中の靴に履き替えます。
+        会社では靴を脱がないところが多いですが、スリッパに履き替える会社もあります。
+        部屋の中をきれいに保つために、この習慣はとても大切にされています。
+        """,
+        "問題": "学校では生徒たちはどのようにしますか。",
+        "選項": [
+            "1. 外の靴のままで教室に入る",
+            "2. スリッパを履いて学校へ行く",
+            "3. 玄関で学校の中の靴に履き替える",
+            "4. 会社と同じように靴を脱がない"
+        ],
+        "正確答案": "3. 玄関で学校の中的靴に履き替える",
+        "中文翻譯": "在日本，進入屋內時必須脫鞋。\n在學校裡，學生們也會在玄關脫下室外鞋，換穿學校內部的專用鞋。\n雖然很多公司不需要脫鞋，但也有一些公司需要換穿拖鞋。\n為了保持房間內部的乾淨，這個習慣被大家非常珍視。",
+        "詳解": """
+        💡 **讀解核心關鍵：**
+        題目問的是「學校裡學生怎麼做？」。文章第二句直截了當指出：「学校でも、生徒たちは玄関で外の靴を脱いで、学校の中の靴に履き替えます。(學校裡學生也是在玄關脫掉外面的鞋子，換上學校內的鞋子)」，因此答案完全對應選項 3。
+        
+        ✏️ **重點單字與文法：**
+        • **脱ぐ (ぬぐ)**：脫掉（衣服、鞋子等）。
+        • **～なければなりません**：(文法) 必須...、不得不...。
+        • **履き替える (はきかえる)**：換穿（鞋子、褲子等）。
+        • **保つ (たもつ)**：保持、維持。
+        """
+    },
+    {
+        "級別": "N3",
+        "類型": "商務公告與生活公告",
+        "文章": """
+        【さくらマンション管理組合からのお知らせ】
+        住民の皆様、いつもありがとうございます。
+        来週月曜日（7月20日）の午前9時から午後1時まで、マンション全体の電気設備点検を行います。
+        点検中は、エレベーターや廊下の明かりが使えなくなるほか、各お部屋の電気も1時間ほど止まります。
+        冷蔵庫の中のものが悪くならないよう、ご注意ください。
+        ご不便をおかけしますが、ご理解とご協力をお願いいたします。
+        """,
+        "問題": "お知らせの内容について、住民が注意すべきことはどれですか。",
+        "選項": [
+            "1. 月曜日の午前中はエレベーターがずっと動かないこと",
+            "2. 各部屋の電気が4時間連続で止まってしまうこと",
+            "3. 冷蔵庫の中の食品の状態に気を配ること",
+            "4. 廊下の明かりが来週中ずっと消えること"
+        ],
+        "正確答案": "3. 冷蔵庫の中の食品の状態に気を配ること",
+        "中文翻譯": "【櫻花公寓管理委員會通知】\n各位住戶大家好，由衷感謝大家平日的配合。\n下週一（7月20日）上午9點至下午1點，將進行整棟公寓的電力設備檢查。\n檢查期間，除了電梯及走廊照明無法使用外，各住戶室內的電源也將中斷約1小時。\n請特別注意，避免冰箱內的食物腐壞。\n造成不便深表歉意，懇請大家的理解與配合。",
+        "詳解": """
+        💡 **讀解核心關鍵：**
+        公告特別叮嚀住戶要注意的事情是「各お部屋の電気も1時間ほど止まります。冷蔵庫の中のものが悪くならないよう、ご注意ください。(各房間停電約1小時，請注意別讓冰箱裡的東西壞掉)」，選項 3 的「對冰箱內的食品狀態留心」完全符合管理處的警告核心。
+        
+        ✏️ **重點單字與文法：**
+        • **点検 (てんけん)**：檢查、盤點。
+        • **悪くなる (わるくなる)**：變壞、(食物)腐敗。
+        • **～よう、ご注意ください**：(文法) 為了...，請注意/請小心。
+        • **ご不便をおかけします**：(文法) 給您帶來不便（極為常見的商務客套敬語）。
+        """
+    }
+]
+
+# =========================================================================
 # 🔄 狀態初始化
 # =========================================================================
 if "learned_list" not in st.session_state:
     st.session_state.learned_list = []
-
-# 用於紀錄過去 7 天內每天各自出現過什麼單字，來做到「一週內不重複」
 if "history_7_days" not in st.session_state:
     st.session_state.history_7_days = {}
 
+# 語音轉 bytes 函數
 def text_to_speech_bytes(text):
     try:
         tts = gTTS(text=text, lang='ja', slow=False)
@@ -45,34 +142,26 @@ def text_to_speech_bytes(text):
     except:
         return None
 
-# 需求 3：冷卻演算核心 — 自動過濾掉過去七天看過的單字
+# 冷卻機制單字抽選
 def get_smart_daily_words(target_date):
     date_str = target_date.strftime('%Y-%m-%d')
-    
-    # 1. 撈出過去 7 天內所有生成過的單字名單
     recently_seen = set()
     for i in range(1, 8):
         prev_date = (target_date - timedelta(days=i)).strftime('%Y-%m-%d')
         if prev_date in st.session_state.history_7_days:
             recently_seen.update(st.session_state.history_7_days[prev_date])
             
-    # 2. 過濾掉七天內出現過的字
     pool = [w for w in JAPANESE_WORDS if w["單字"] not in recently_seen]
-    
-    # 防禦機制：若庫存太少不夠扣，就直接用全字庫抽
     if len(pool) < 5:
         pool = JAPANESE_WORDS
         
-    # 3. 以當天日期為隨機種子抽 5 個字
     seed_num = int(target_date.strftime('%Y%m%d'))
     random.seed(seed_num)
     chosen_words = random.sample(pool, min(len(pool), 5))
-    
-    # 4. 登記到歷史紀錄中
     st.session_state.history_7_days[date_str] = [w["單字"] for w in chosen_words]
     return chosen_words
 
-# 測驗抽題核心回呼
+# 需求 2 & 3：完全獨立、絕不卡死、移除氣球特效的單字測驗重置回呼
 def generate_new_quiz():
     st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
     st.session_state.quiz_type = random.randint(0, 1)
@@ -86,12 +175,24 @@ def generate_new_quiz():
     random.shuffle(choices)
     st.session_state.quiz_choices = choices
 
-# =========================================================================
-# 🌐 網頁版面渲染
-# =========================================================================
-st.title("🇯🇵 N3-N5 智慧日文學習大本營")
-tab_study, tab_list, tab_quiz = st.tabs(["📥 歷史單字隨身卡", "🎓 已學會單字庫", "📝 挑戰日文小測驗"])
+# 需求 3：讀解題庫切換回呼
+def generate_new_reading_quiz():
+    st.session_state.reading_item = random.choice(READING_QUIZZES)
 
+# =========================================================================
+# 🌐 網頁介面呈現
+# =========================================================================
+st.title("🇯🇵 N3-N5 智慧日文隨身卡與全能題庫")
+tab_study, tab_list, tab_quiz, tab_reading = st.tabs([
+    "📥 歷史單字隨身卡", 
+    "🎓 已學會單字庫", 
+    "📝 挑戰日文小測驗", 
+    "📖 日檢短篇讀解測驗" # 需求 3：全新分頁入口
+])
+
+# -------------------------------------------------------------------------
+# 分頁一：歷史單字隨身卡
+# -------------------------------------------------------------------------
 with tab_study:
     selected_date = st.date_input("📅 選擇學習或複習的日期：", datetime.today())
     date_str = selected_date.strftime('%Y-%m-%d')
@@ -104,16 +205,15 @@ with tab_study:
         unique_id = f"{date_str}_{item['單字']}"
         is_saved = any(x["id"] == unique_id for x in st.session_state.learned_list)
 
-        # 需求 1：彩色標籤獨立在第一行
+        # 需求 1：彩色級別分級標籤獨立在最上排一行
         if item["級別"] == "N3": st.error(f"日檢分級： {item['級別']} ")
         elif item["級別"] == "N4": st.warning(f"日檢分級： {item['級別']} ")
         else: st.success(f"日檢分級： {item['級別']} ")
         
-        # 單字獨立在第二行
+        # 單字本體完美換到正下方第二行
         st.markdown(f"### 單字 {idx+1}：{item['單字']}（{item['詞性']}）")
         st.write(f"讀音假名：【 **{item['假名']}** 】")
         
-        # 需求 2：迷你版語音條
         col_audio, _ = st.columns(2)
         with col_audio:
             word_audio = text_to_speech_bytes(item['單字'])
@@ -130,7 +230,7 @@ with tab_study:
             sentence_audio = text_to_speech_bytes(item['例句'])
             if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
 
-        # 打勾加入功能
+        # 打勾雙向儲存控制（此處會讀取 learned_list 狀態保持打勾同步）
         state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_id}")
         if state_checkbox and not is_saved:
             st.session_state.learned_list.append({
@@ -141,60 +241,3 @@ with tab_study:
             
         st.write("---")
 
-# 需求 1 & 2：已學會清單正序排列（從 1 開始）＋ 支援手動移除按鈕
-with tab_list:
-    st.subheader("🎓 您的個人專屬熟記單字庫")
-    if st.session_state.learned_list:
-        st.write(f"目前累計已經背熟了 **{len(st.session_state.learned_list)}** 個單字！")
-        
-        df_learned = pd.DataFrame(st.session_state.learned_list)
-        df_learned = df_learned.sort_index(ascending=True) # 時間正序排列
-        df_learned.index = range(1, len(df_learned) + 1) # 流水號從 1 開始
-        
-        show_df = df_learned[["學習日期", "級別", "單字", "讀音", "意思"]]
-        show_df.columns = ["出現日期", "日檢級別", "日文單字", "假名讀音", "中文意思"]
-        st.dataframe(show_df, use_container_width=True)
-        
-        # 需求 1：手動單字移除鈕（代表突然又不會了）
-        st.write("---")
-        st.write("⚙️ **管理熟記清單**（點擊下方按鈕可立刻移出已學會區）：")
-        for word_item in list(st.session_state.learned_list):
-            if st.button(f"🗑️ 移除單字：{word_item['單字']}", key=f"del_btn_{word_item['id']}"):
-                st.session_state.learned_list = [x for x in st.session_state.learned_list if x["id"] != word_item["id"]]
-                st.toast(f"已將 {word_item['單字']} 移出已學會區。")
-                st.rerun()
-    else:
-        st.info("這裡目前還空空的。在隨身卡勾選「學會了」之後紀錄就會出現在這邊！")
-
-# 需求 3：全面修復、絕不閃退的日文測驗區
-with tab_quiz:
-    st.subheader("📝 日文實力大考驗 (N3-N5)")
-    st.write("說明：請點選正確的選項，回答後點擊下方「提交答案」按鈕核對。")
-    st.write("---")
-    
-    if "quiz_item" not in st.session_state:
-        generate_new_quiz()
-
-    st.button("🔄 換一題新測驗", on_click=generate_new_quiz, key="refresh_quiz_btn")
-
-    q_item = st.session_state.quiz_item
-    q_type = st.session_state.quiz_type
-    q_choices = st.session_state.quiz_choices
-
-    with st.form(key="pure_japanese_quiz_form"):
-        if q_type == 0:
-            st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
-            correct_ans = q_item["假名"]
-        else:
-            st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
-            correct_ans = q_item["單字"]
-            
-        user_ans = st.radio("請選擇正確選項：", q_choices, key="quiz_form_radio")
-        submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
-
-    if submit_btn:
-        if user_ans == correct_ans:
-            st.success(f"🎉 完全答對！【{q_item['單字']}】的意思正是「{q_item['中文意思']}」。")
-            st.balloons()
-        else:
-            st.error(f"❌ 再接再厲！正確答案應該是：**{correct_ans}**。")
