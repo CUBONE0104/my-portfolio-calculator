@@ -1,23 +1,15 @@
 import streamlit as st
-import yfinance as yf
 import pandas as pd
-import requests
-import base64
 import random
-from datetime import datetime
-import plotly.express as px
+from datetime import datetime, timedelta
 from gtts import gTTS
 import io
 
 # 1. 網頁基本設定
-st.set_page_config(page_title="個人投資與日文學習空間", layout="centered", page_icon="📈")
-
-GITHUB_TOKEN = st.secrets.get("GITHUB_TOKEN", "")
-REPO_NAME = "您的GitHub帳號/您的專案名稱"
-CSV_FILE_PATH = "history_data.csv"
+st.set_page_config(page_title="卡拉與小魚的日文單字隨身卡", layout="centered", page_icon="🇯🇵")
 
 # =========================================================================
-# 📚 核心日文單字庫
+# 📚 核心日文單字庫 (精選 11 個單字，未來可自行無限擴充)
 # =========================================================================
 JAPANESE_WORDS = [
     {"級別": "N5", "單字": "學生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", "例句": "私は学生です。", "例句假名": "わたしはがくせいです。", "例句中文": "我是學生。"},
@@ -33,10 +25,15 @@ JAPANESE_WORDS = [
     {"級別": "N3", "單字": "解決する", "假名": "かいけつする", "詞性": "動詞", "中文意思": "解決", "例句": "問題を無事に解決しました。", "例句假名": "もんだいをぶじにかいけつしました。", "例句中文": "順利解決了問題。"}
 ]
 
-def get_fixed_daily_words(date_seed_str):
-    seed_num = int(date_seed_str.replace("-", ""))
-    random.seed(seed_num)
-    return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
+# =========================================================================
+# 🔄 狀態初始化
+# =========================================================================
+if "learned_list" not in st.session_state:
+    st.session_state.learned_list = []
+
+# 用於紀錄過去 7 天內每天各自出現過什麼單字，來做到「一週內不重複」
+if "history_7_days" not in st.session_state:
+    st.session_state.history_7_days = {}
 
 def text_to_speech_bytes(text):
     try:
@@ -48,69 +45,34 @@ def text_to_speech_bytes(text):
     except:
         return None
 
-# =========================================================================
-# ⚙️ 後台共用函式（維持投資理財核心計算）
-# =========================================================================
-def save_to_github_csv(user, total_assets, profit, exposure_rate):
-    if not GITHUB_TOKEN or "您的GitHub帳號" in REPO_NAME: return
-    url = f"https://github.com{REPO_NAME}/contents/{CSV_FILE_PATH}"
-    headers = {"Authorization": f"token {GITHUB_TOKEN}", "Accept": "application/vnd.github.v3+json"}
-    today = datetime.today().strftime('%Y-%m-%d')
-    new_row = f"\n{today},{user},{total_assets},{profit},{exposure_rate}"
-    res = requests.get(url, headers=headers)
-    if res.status_code == 200:
-        file_data = res.json()
-        sha = file_data["sha"]
-        old_content = base64.b64decode(file_data["content"]).decode("utf-8")
-        if today in old_content and user in old_content: return
-        updated_content = old_content + new_row
-    else:
-        sha = None
-        updated_content = "日期,使用者,總資產(萬),今日損益(萬),曝險比率(%)\n" + f"{today},{user},{total_assets},{profit},{exposure_rate}"
-    payload = {"message": f"🤖 系統自動更新 {user} 每日資產紀錄", "content": base64.b64encode(updated_content.encode("utf-8")).decode("utf-8")}
-    if sha: payload["sha"] = sha
-    requests.put(url, headers=headers, json=payload)
+# 需求 3：冷卻演算核心 — 自動過濾掉過去七天看過的單字
+def get_smart_daily_words(target_date):
+    date_str = target_date.strftime('%Y-%m-%d')
+    
+    # 1. 撈出過去 7 天內所有生成過的單字名單
+    recently_seen = set()
+    for i in range(1, 8):
+        prev_date = (target_date - timedelta(days=i)).strftime('%Y-%m-%d')
+        if prev_date in st.session_state.history_7_days:
+            recently_seen.update(st.session_state.history_7_days[prev_date])
+            
+    # 2. 過濾掉七天內出現過的字
+    pool = [w for w in JAPANESE_WORDS if w["單字"] not in recently_seen]
+    
+    # 防禦機制：若庫存太少不夠扣，就直接用全字庫抽
+    if len(pool) < 5:
+        pool = JAPANESE_WORDS
+        
+    # 3. 以當天日期為隨機種子抽 5 個字
+    seed_num = int(target_date.strftime('%Y%m%d'))
+    random.seed(seed_num)
+    chosen_words = random.sample(pool, min(len(pool), 5))
+    
+    # 4. 登記到歷史紀錄中
+    st.session_state.history_7_days[date_str] = [w["單字"] for w in chosen_words]
+    return chosen_words
 
-def load_history_data():
-    url = f"https://githubusercontent.com{REPO_NAME}/main/{CSV_FILE_PATH}"
-    try: return pd.read_csv(url)
-    except:
-        return pd.DataFrame({
-            "日期": ["2026-06-22", "2026-06-23", "2026-06-24", "2026-06-25", "2026-06-26"],
-            "使用者": ["卡拉", "卡拉", "卡拉", "卡拉", "卡拉"],
-            "總資產(萬)": [150.0, 152.5, 149.0, 155.2, 160.0],
-            "今日損益(萬)": [0.0, 2.5, -3.5, 6.2, 4.8],
-            "曝險比率(%)": [1.41, 1.43, 1.38, 1.45, 1.42]
-        })
-
-@st.cache_data(ttl=600)
-def get_taiwan_stock_info(symbol):
-    symbol = str(symbol).strip().upper()
-    if not symbol: return 0.0, "請輸入股號"
-    if not symbol.endswith(".TW"): symbol = f"{symbol}.TW"
-    try:
-        ticker = yf.Ticker(symbol)
-        return round(ticker.fast_info['last_price'], 2), ticker.info.get('shortName', symbol)
-    except: return 0.0, "查無此股號"
-
-# =========================================================================
-# 🔄 狀態初始化 (獨立運行，絕不干擾)
-# =========================================================================
-if "kara_list" not in st.session_state:
-    st.session_state.kara_list = [
-        {"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 70.0, "持有股數(股)": 4000},
-        {"股號": "2330", "股票名稱": "台積電", "自訂產業備註": "半導體龍頭", "即時股價": 0.0, "原始總成本(萬元)": 25.0, "持有股數(股)": 350}
-    ]
-    st.session_state.kara_cash = 20.0
-if "fish_list" not in st.session_state:
-    st.session_state.fish_list = [{"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 30.0, "持有股數(股)": 1500}]
-    st.session_state.fish_cash = 10.0
-
-# 🎓 已學會單字列表
-if "learned_history_list" not in st.session_state:
-    st.session_state.learned_history_list = []
-
-# 📝 小測驗換題回呼函式
+# 測驗抽題核心回呼
 def generate_new_quiz():
     st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
     st.session_state.quiz_type = random.randint(0, 1)
@@ -125,85 +87,114 @@ def generate_new_quiz():
     st.session_state.quiz_choices = choices
 
 # =========================================================================
-# 🌐 左側主功能選單
+# 🌐 網頁版面渲染
 # =========================================================================
-page = st.sidebar.radio("🌐 選擇網頁功能", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器", "🇯🇵 每日自動日文單字"])
+st.title("🇯🇵 N3-N5 智慧日文學習大本營")
+tab_study, tab_list, tab_quiz = st.tabs(["📥 歷史單字隨身卡", "🎓 已學會單字庫", "📝 挑戰日文小測驗"])
 
-# -------------------------------------------------------------------------
-# 分頁三：🇯🇵 每日自動日文單字與測驗專區
-# -------------------------------------------------------------------------
-if page == "🇯🇵 每日自動日文單字":
-    st.title("🇯🇵 N3-N5 智慧日文隨身卡與測驗")
-    tab_study, tab_list, tab_quiz = st.tabs(["📥 歷史單字隨身卡", "🎓 已學會單字庫", "📝 挑戰日文小測驗"])
+with tab_study:
+    selected_date = st.date_input("📅 選擇學習或複習的日期：", datetime.today())
+    date_str = selected_date.strftime('%Y-%m-%d')
+    st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的單字（內建一週冷卻防重複機制）。")
+    st.write("---")
 
-    with tab_study:
-        selected_date = st.date_input("📅 選擇學習或複習的日期：", datetime.today())
-        date_str = selected_date.strftime('%Y-%m-%d')
-        st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的精選單字卡（單日絕對不重複）。")
+    daily_words = get_smart_daily_words(selected_date)
+
+    for idx, item in enumerate(daily_words):
+        unique_id = f"{date_str}_{item['單字']}"
+        is_saved = any(x["id"] == unique_id for x in st.session_state.learned_list)
+
+        # 需求 1：彩色標籤獨立在第一行
+        if item["級別"] == "N3": st.error(f"日檢分級： {item['級別']} ")
+        elif item["級別"] == "N4": st.warning(f"日檢分級： {item['級別']} ")
+        else: st.success(f"日檢分級： {item['級別']} ")
+        
+        # 單字獨立在第二行
+        st.markdown(f"### 單字 {idx+1}：{item['單字']}（{item['詞性']}）")
+        st.write(f"讀音假名：【 **{item['假名']}** 】")
+        
+        # 需求 2：迷你版語音條
+        col_audio, _ = st.columns(2)
+        with col_audio:
+            word_audio = text_to_speech_bytes(item['單字'])
+            if word_audio: st.audio(word_audio, format="audio/mp3")
+
+        st.write(f"💡 **中文意思**： :blue[**{item['中文意思']}**]")
+        st.write("📝 **實用例句：**")
+        st.write(f"**{item['例句']}**")
+        st.caption(f"（讀音：{item['例句假名']}）")
+        st.write(f"➜ 中文：{item['例句中文']}")
+        
+        col_sentence_ui, _ = st.columns(2)
+        with col_sentence_ui:
+            sentence_audio = text_to_speech_bytes(item['例句'])
+            if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
+
+        # 打勾加入功能
+        state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_id}")
+        if state_checkbox and not is_saved:
+            st.session_state.learned_list.append({
+                "id": unique_id, "學習日期": date_str, "級別": item["級別"], "單字": item["單字"], "讀音": item["假名"], "意思": item["中文意思"]
+            })
+        elif not state_checkbox and is_saved:
+            st.session_state.learned_list = [x for x in st.session_state.learned_list if x["id"] != unique_id]
+            
         st.write("---")
 
-        daily_words = get_fixed_daily_words(date_str)
+# 需求 1 & 2：已學會清單正序排列（從 1 開始）＋ 支援手動移除按鈕
+with tab_list:
+    st.subheader("🎓 您的個人專屬熟記單字庫")
+    if st.session_state.learned_list:
+        st.write(f"目前累計已經背熟了 **{len(st.session_state.learned_list)}** 個單字！")
+        
+        df_learned = pd.DataFrame(st.session_state.learned_list)
+        df_learned = df_learned.sort_index(ascending=True) # 時間正序排列
+        df_learned.index = range(1, len(df_learned) + 1) # 流水號從 1 開始
+        
+        show_df = df_learned[["學習日期", "級別", "單字", "讀音", "意思"]]
+        show_df.columns = ["出現日期", "日檢級別", "日文單字", "假名讀音", "中文意思"]
+        st.dataframe(show_df, use_container_width=True)
+        
+        # 需求 1：手動單字移除鈕（代表突然又不會了）
+        st.write("---")
+        st.write("⚙️ **管理熟記清單**（點擊下方按鈕可立刻移出已學會區）：")
+        for word_item in list(st.session_state.learned_list):
+            if st.button(f"🗑️ 移除單字：{word_item['單字']}", key=f"del_btn_{word_item['id']}"):
+                st.session_state.learned_list = [x for x in st.session_state.learned_list if x["id"] != word_item["id"]]
+                st.toast(f"已將 {word_item['單字']} 移出已學會區。")
+                st.rerun()
+    else:
+        st.info("這裡目前還空空的。在隨身卡勾選「學會了」之後紀錄就會出現在這邊！")
 
-        for idx, item in enumerate(daily_words):
-            unique_id = f"{date_str}_{item['單字']}"
-            
-            # 檢查是否已存在已學會清單中
-            is_saved = any(x["id"] == unique_id for x in st.session_state.learned_history_list)
+# 需求 3：全面修復、絕不閃退的日文測驗區
+with tab_quiz:
+    st.subheader("📝 日文實力大考驗 (N3-N5)")
+    st.write("說明：請點選正確的選項，回答後點擊下方「提交答案」按鈕核對。")
+    st.write("---")
+    
+    if "quiz_item" not in st.session_state:
+        generate_new_quiz()
 
-            # 需求 1：排版修正，分級彩色標籤獨立在第一行
-            if item["級別"] == "N3": st.error(f"日檢分級： {item['級別']} ")
-            elif item["級別"] == "N4": st.warning(f"日檢分級： {item['級別']} ")
-            else: st.success(f"日檢分級： {item['級別']} ")
-            
-            # 單字被移至正下方第二行，完全不擠在一起
-            st.markdown(f"### 單字 {idx+1}：{item['單字']}（{item['詞性']}）")
-            st.write(f"讀音假名：【 **{item['假名']}** 】")
-            
-            # 需求 2：語音調尺寸大幅限縮小化排版
-            col_audio_ui, _ = st.columns(2)
-            with col_audio_ui:
-                word_audio = text_to_speech_bytes(item['單字'])
-                if word_audio: st.audio(word_audio, format="audio/mp3")
+    st.button("🔄 換一題新測驗", on_click=generate_new_quiz, key="refresh_quiz_btn")
 
-            st.write(f"💡 **中文意思**： :blue[**{item['中文意思']}**]")
-            st.write("📝 **實用例句：**")
-            st.write(f"**{item['例句']}**")
-            st.caption(f"（讀音：{item['例句假名']}）")
-            st.write(f"➜ 中文：{item['例句中文']}")
-            
-            # 例句語音調縮小化排版
-            col_sentence_ui, _ = st.columns(2)
-            with col_sentence_ui:
-                sentence_audio = text_to_speech_bytes(item['例句'])
-                if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
+    q_item = st.session_state.quiz_item
+    q_type = st.session_state.quiz_type
+    q_choices = st.session_state.quiz_choices
 
-            # 需求 4：互動打勾雙向記憶（勾選加入，取消則動態剔除清單）
-            state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_id}")
+    with st.form(key="pure_japanese_quiz_form"):
+        if q_type == 0:
+            st.markdown(f"### ❓ 題目：請選出日文單字 **「 {q_item['單字']} 」** 的正確平假名讀音？")
+            correct_ans = q_item["假名"]
+        else:
+            st.markdown(f"### ❓ 題目：中文意思是 **「 {q_item['中文意思']} 」** 的日文單字是哪一個？")
+            correct_ans = q_item["單字"]
             
-            if state_checkbox and not is_saved:
-                st.session_state.learned_history_list.append({
-                    "id": unique_id, "學習日期": date_str, "級別": item["級別"], "單字": item["單字"], "讀音": item["假名"], "意思": item["中文意思"]
-                })
-            elif not state_checkbox and is_saved:
-                st.session_state.learned_history_list = [x for x in st.session_state.learned_history_list if x["id"] != unique_id]
-                
-            st.write("---")
+        user_ans = st.radio("請選擇正確選項：", q_choices, key="quiz_form_radio")
+        submit_btn = st.form_submit_button("🎯 提交答案", use_container_width=True)
 
-    # 📥 需求 1 & 2：已學會專區（從1開始排列、正序遞增、附帶獨立一鍵撤銷按鈕）
-    with tab_list:
-        st.subheader("🎓 您的個人專屬熟記單字庫")
-        if st.session_state.learned_history_list:
-            st.write(f"恭喜！您與小魚目前累計已經背熟了 **{len(st.session_state.learned_history_list)}** 個單字！")
-            
-            df_learned = pd.DataFrame(st.session_state.learned_history_list)
-            
-            # 需求 2：依照歷史時間先後順序正序向下排列（最早學會的在最上面）
-            df_learned = df_learned.sort_index(ascending=True)
-            
-            # 需求 2：將左側序號重新包裝，強制從 1 開始依序排列
-            df_learned.index = range(1, len(df_learned) + 1)
-            
-            show_df = df_learned[["學習日期", "級別", "單字", "讀音", "意思"]]
-            show_df.columns = ["出現日期", "日檢級別", "日文單字", "假名讀音", "中文意思"]
-            st.dataframe(show_df, use_container_width=True)
-            
+    if submit_btn:
+        if user_ans == correct_ans:
+            st.success(f"🎉 完全答對！【{q_item['單字']}】的意思正是「{q_item['中文意思']}」。")
+            st.balloons()
+        else:
+            st.error(f"❌ 再接再厲！正確答案應該是：**{correct_ans}**。")
