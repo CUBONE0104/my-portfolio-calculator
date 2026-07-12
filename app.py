@@ -6,6 +6,7 @@ import base64
 import random
 from datetime import datetime
 import plotly.express as px
+import urllib.parse
 
 # 1. 網頁基本設定
 st.set_page_config(page_title="個人投資與日文學習空間", layout="centered", page_icon="📈")
@@ -21,100 +22,144 @@ JAPANESE_WORDS = [
     # N5 單字
     {
         "級別": "N5", 
-        "單字": "<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>", 
+        "單字": "学生",
+        "單字純假名": "がくせい",
+        "單字帶假名": "<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>", 
         "詞性": "名詞", 
         "中文意思": "學生", 
-        "例句": "<ruby>私<rt>わたし</rt></ruby>は<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>です。", 
+        "例句": "私は学生です。", 
+        "例句純假名": "わたしはがくせいです",
+        "例句帶假名": "<ruby>私<rt>わたし</rt></ruby>は<ruby>学<rt>がく</rt></ruby><ruby>生<rt>せい</rt></ruby>です。", 
         "例句中文": "我是學生。"
     },
     {
         "級別": "N5", 
-        "單字": "<ruby>美<rt>おい</rt></ruby>しい", 
+        "單字": "美味しい", 
+        "單字純假名": "おいしい",
+        "單字帶假名": "<ruby>美<rt>おい</rt></ruby>しい", 
         "詞性": "形容詞", 
         "中文意思": "美味的、好吃的", 
-        "例句": "このリンゴはとても<ruby>美<rt>おい</rt></ruby>しいです。", 
+        "例句": "このリンゴはとても美味しいです。", 
+        "例句純假名": "このりんごはとてもおいしいです",
+        "例句帶假名": "このリンゴはとても<ruby>美<rt>おい</rt></ruby>しいです。", 
         "例句中文": "這個蘋果非常好吃。"
     },
     {
         "級別": "N5", 
-        "單字": "<ruby>行<rt>い</rt></ruby>く", 
+        "單字": "行く", 
+        "單字純假名": "いく",
+        "單字帶假名": "<ruby>行<rt>い</rt></ruby>く", 
         "詞性": "動詞", 
         "中文意思": "去", 
-        "例句": "<ruby>明<rt>あした</rt></ruby><ruby>日<rt>にち</rt></ruby>、<ruby>日<rt>に</rt></ruby><ruby>本<rt>ほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", 
+        "例句": "明日、日本へ行きます。", 
+        "例句純假名": "あしたにほんへいきます",
+        "例句帶假名": "<ruby>明<rt>あした</rt></ruby><ruby>日<rt>にち</rt></ruby>、<ruby>日<rt>に</rt></ruby><ruby>本<rt>ほん</rt></ruby>へ<ruby>行<rt>い</rt></ruby>きます。", 
         "例句中文": "明天要去日本。"
     },
     {
         "級別": "N5", 
-        "單字": "<ruby>飲<rt>の</rt></ruby>む", 
+        "單字": "飲む", 
+        "單字純假名": "のむ",
+        "單字帶假名": "<ruby>飲<rt>の</rt></ruby>む", 
         "詞性": "動詞", 
         "中文意思": "喝", 
-        "例句": "コーヒーを<ruby>飲<rt>の</rt></ruby>みます。", 
+        "例句": "コーヒーを飲みます。", 
+        "例句純假名": "こーひーをのみます",
+        "例句帶假名": "コーヒーを<ruby>飲<rt>の</rt></ruby>みます。", 
         "例句中文": "喝咖啡。"
     },
     # N4 單字
     {
         "級別": "N4", 
-        "單字": "<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>", 
+        "單字": "試験", 
+        "單字純假名": "しけん",
+        "單字帶假名": "<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>", 
         "詞性": "名詞", 
         "中文意思": "考試", 
-        "例句": "<ruby>来<rt>らい</rt></ruby><ruby>週<rt>しゅう</rt></ruby>、日本語の<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>があります。", 
+        "例句": "来週、日本語の試験があります。", 
+        "例句純假名": "らいしゅうにほんごのしけんがあります",
+        "例句帶假名": "<ruby>来<rt>らい</rt></ruby><ruby>週<rt>しゅう</rt></ruby>、日本語の<ruby>試<rt>し</rt></ruby><ruby>験<rt>けん</rt></ruby>があります。", 
         "例句中文": "下週有日文考試。"
     },
     {
         "級別": "N4", 
-        "單字": "<ruby>集<rt>あつ</rt></ruby>める", 
+        "單字": "集める", 
+        "單字純假名": "あつめる",
+        "單字帶假名": "<ruby>集<rt>あつ</rt></ruby>める", 
         "詞性": "動詞", 
         "中文意思": "收集、集中", 
-        "例句": "趣味はコインを<ruby>集<rt>あつ</rt></ruby>めることです。", 
+        "例句": "趣味はコインを集めることです。", 
+        "例句純假名": "しゅみはこいんをあつめることです",
+        "例句帶假名": "趣味はコインを<ruby>集<rt>あつ</rt></ruby>めることです。", 
         "例句中文": "我的興趣是收集硬幣。"
     },
     {
         "級別": "N4", 
-        "單字": "<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>する", 
+        "單字": "復習する", 
+        "單字純假名": "ふくしゅうする",
+        "單字帶假名": "<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>する", 
         "詞性": "動詞", 
         "中文意思": "複習", 
-        "例句": "レッスンをしっかりと<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>します。", 
+        "例句": "レッスンをしっかりと復習します。", 
+        "例句純假名": "れっすんをしっかりとふくしゅうします",
+        "例句帶假名": "レッスンをしっかりと<ruby>複<rt>ふく</rt></ruby><ruby>習<rt>しゅう</rt></ruby>します。", 
         "例句中文": "好好複習課堂內容。"
     },
     # N3 單字
     {
         "級別": "N3", 
-        "單字": "<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>", 
+        "單字": "準備", 
+        "單字純假名": "じゅんび",
+        "單字帶假名": "<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>", 
         "詞性": "名詞/動詞", 
         "中文意思": "準備", 
-        "例句": "<ruby>旅<rt>りょ</rt></ruby><ruby>行<rt>こう</rt></ruby>の<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>はもうできましたか。", 
+        "例句": "旅行の準備はもうできましたか。", 
+        "例句純假名": "りょこうのじゅんびはもうできましたか",
+        "例句帶假名": "<ruby>旅<rt>りょ</rt></ruby><ruby>行<rt>こう</rt></ruby>の<ruby>準<rt>じゅん</rt></ruby><ruby>備<rt>び</rt></ruby>はもうできましたか。", 
         "例句中文": "旅行的準備已經好了嗎？"
     },
     {
         "級別": "N3", 
-        "單字": "<ruby>必<rt>かなら</rt></ruby>ず", 
+        "單字": "必ず", 
+        "單字純假名": "かならず",
+        "單字帶假名": "<ruby>必<rt>かなら</rt></ruby>ず", 
         "詞性": "副詞", 
         "中文意思": "必定、務必", 
-        "例句": "約束は<ruby>必<rt>かなら</rt></ruby>ず<ruby>守<rt>まも</rt></ruby>ります。", 
+        "例句": "約束は必ず守ります。", 
+        "例句純假名": "やくそくはかならずまもります",
+        "例句帶假名": "約束は<ruby>必<rt>かなら</rt></ruby>ず<ruby>守<rt>まも</rt></ruby>ります。", 
         "例句中文": "約定好的事我一定會遵守。"
     },
     {
         "級別": "N3", 
-        "單字": "<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>", 
+        "單字": "興味", 
+        "單字純假名": "きょうみ",
+        "單字帶假名": "<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>", 
         "詞性": "名詞", 
         "中文意思": "興趣", 
-        "例句": "日本文化に<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>があります。", 
+        "例句": "日本文化に興味があります。", 
+        "例句純假名": "にほんぶんかにきょうみがあります",
+        "例句帶假名": "日本文化に<ruby>興<rt>きょう</rt></ruby><ruby>味<rt>み</rt></ruby>があります。", 
         "例句中文": "我對日本文化感興趣。"
     },
     {
         "級別": "N3", 
-        "單字": "<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>する", 
+        "單字": "解決する", 
+        "單字純假名": "かいけつする",
+        "單字帶假名": "<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>する", 
         "詞性": "動詞", 
         "中文意思": "解決", 
-        "例句": "問題を無事に<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>しました。", 
+        "例句": "問題を無事に解決しました。", 
+        "例句純假名": "もんだいをぶじにかいけつしました",
+        "例句帶假名": "問題を無事に<ruby>解<rt>かい</rt></ruby><ruby>決<rt>けつ</rt></ruby>しました。", 
         "例句中文": "順利解決了問題。"
     }
 ]
 
-def get_daily_words():
-    """根據今天的日期作為種子碼，每天固定隨機抓取 5 個單字"""
-    today_str = datetime.today().strftime('%Y%m%d')
-    random.seed(int(today_str)) # 鎖定當天種子，確保整天刷新網頁都是同一批單字
+def get_daily_words(target_date):
+    """根據選定的日期作為種子碼，確保特定日期的單字永遠固定"""
+    date_seed = int(target_date.strftime('%Y%m%d'))
+    random.seed(date_seed)
     return random.sample(JAPANESE_WORDS, min(len(JAPANESE_WORDS), 5))
 
 # =========================================================================
@@ -162,7 +207,7 @@ def get_taiwan_stock_info(symbol):
         return round(ticker.fast_info['last_price'], 2), ticker.info.get('shortName', symbol)
     except: return 0.0, "查無此股號"
 
-# 初始化持股狀態
+# 初始化狀態
 if "kara_list" not in st.session_state:
     st.session_state.kara_list = [
         {"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 70.0, "持有股數(股)": 4000},
@@ -172,6 +217,8 @@ if "kara_list" not in st.session_state:
 if "fish_list" not in st.session_state:
     st.session_state.fish_list = [{"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 30.0, "持有股數(股)": 1500}]
     st.session_state.fish_cash = 10.0
+if "learned_words" not in st.session_state:
+    st.session_state.learned_words = {}
 
 # =========================================================================
 # 🌐 左側選單
@@ -179,64 +226,43 @@ if "fish_list" not in st.session_state:
 page = st.sidebar.radio("🌐 選擇網頁功能", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器", "🇯🇵 每日自動日文單字"])
 
 # -------------------------------------------------------------------------
-# 分頁三：🇯🇵 每日自動日文單字功能
+# 分頁三：🇯🇵 每日自動日文單字功能 (需求1, 2, 3 完整實現)
 # -------------------------------------------------------------------------
 if page == "🇯🇵 每日自動日文單字":
     st.title("🇯🇵 N3-N5 每日核心單字卡")
-    today_date = datetime.today().strftime('%Y 年 %m 月 %d 日')
-    st.write(f"今天是 **{today_date}**。系統已為您自動生成今日份的 5 個混搭單字！")
+    
+    # 需求 2：互動式選擇歷史日期
+    selected_date = st.date_input("📅 選擇欲學習或複習的日期：", datetime.today())
+    date_str = selected_date.strftime('%Y-%m-%d')
+    st.write(f"系統已載入 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的專屬 5 個混搭單字！")
     st.write("---")
 
-    daily_words = get_daily_words()
+    daily_words = get_daily_words(selected_date)
 
     for idx, item in enumerate(daily_words):
+        # 為每個單字建立一個不重複的 key
+        word_key = f"{date_str}_{item['單字']}"
+        
+        # 建立 Google TTS 網頁發音網址 (精確進行 URL 編碼避免報錯)
+        encoded_word = urllib.parse.quote(item['單字'])
+        encoded_sentence = urllib.parse.quote(item['例句'])
+        audio_word_url = f"https://google.com{encoded_word}"
+        audio_sentence_url = f"https://google.com{encoded_sentence}"
+
         with st.container():
-            col_w1, col_w2 = st.columns(2)
+            col_w1, col_w2 = st.columns([1, 4])
             with col_w1:
                 if item["級別"] == "N3": st.error(f"  {item['級別']}  ")
                 elif item["級別"] == "N4": st.warning(f"  {item['級別']}  ")
                 else: st.success(f"  {item['級別']}  ")
+                
+                # 需求 2：互動式打勾確認是否學會
+                is_learned = st.checkbox("学んだ", key=f"chk_{word_key}")
+                if is_learned:
+                    st.caption("✅ 已熟記")
+            
             with col_w2:
-                st.markdown(f"### 單字 {idx+1}： <span style='font-size:32px;'>{item['單字']}</span> （{item['詞性']}）", unsafe_allow_html=True)
-                st.markdown(f"💡 **中文意思**：<span style='color:#1E88E5; font-weight:bold;'>{item['中文意思']}</span>", unsafe_allow_html=True)
-                st.write(f"📝 **實用例句**：")
-                st.markdown(f"<p style='font-size:20px; background-color:#F0F2F6; padding:10px; border-radius:5px;'>{item['例句']}<br><span style='font-size:14px; color:#555;'>➜ {item['例句中文']}</span></p>", unsafe_allow_html=True)
-        st.write("---")
-    
-    st.info("💡 溫馨提示：單字會於每日凌晨 00:00 自動更換，明天記得再來複習喔！")
-
-# -------------------------------------------------------------------------
-# 原本功能：卡拉 & 小魚的計算器
-# -------------------------------------------------------------------------
-else:
-    user_label, list_key, cash_key = ("卡拉", "kara_list", "kara_cash") if page == "👦 卡拉的資產計算器" else ("小魚", "fish_list", "fish_cash")
-    
-    quick_mode = st.checkbox("⚡ 開啟「秒速快算模式」 (不使用個別持股清單，直接手動打總市值)")
-    st.write("---")
-
-    if quick_mode:
-        st.subheader("⚡ 秒速曝險快算面板")
-        q_cash = st.number_input(f"{user_label} 的當前現金總額 (萬元)", min_value=0.0, value=st.session_state[cash_key], step=1.0)
-        q_00631l = st.number_input("🚀 00631L 當前總市值 (萬元)", min_value=0.0, value=90.0, step=1.0)
-        q_others = st.number_input("📈 其他所有股票 當前總市值 (萬元)", min_value=0.0, value=55.0, step=1.0)
-        
-        total_market_value = q_cash + q_00631l + q_others
-        stock_exposure_total = (q_00631l * 2) + q_others
-        exposure_ratio = (stock_exposure_total / total_market_value) if total_market_value > 0 else 0.0
-        total_stock_profit = 0.0
-        total_roi = 0.0
-    else:
-        st.subheader("💵 現金資產配置")
-        st.session_state[cash_key] = st.number_input(f"{user_label} 的當前現金持有金額 (萬元)", min_value=0.0, value=st.session_state[cash_key], step=1.0)
-        st.write("---")
-
-        st.subheader("➕ 新增台股部位")
-        col_in1, col_in2 = st.columns(2)
-        with col_in1: input_symbol = st.text_input("第一步：請輸入台股股號 (如: 2330)", key=f"sym_{user_label}")
-        with col_in2: check_btn = st.button("🔍 查詢股票資訊", key=f"btn_{user_label}")
-
-        if input_symbol:
-            current_price, official_name = get_taiwan_stock_info(input_symbol)
-            if current_price > 0:
-                st.success(f"📈 成功尋獲股票！【{official_name}】 | 目前即時股價：{current_price} 元")
-                col_in3, col_in4, col_in5 = st.columns(3)
+                # 顯示單字與漢字振假名
+                st.markdown(f"### 單字 {idx+1}： <span style='font-size:32px;'>{item['單字帶假名']}</span> （{item['詞性']}）", unsafe_allow_html=True)
+                
+                # 需求 3：加入原生音訊播放器 (單字發音包)
