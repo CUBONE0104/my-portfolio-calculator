@@ -26,7 +26,7 @@ JAPANESE_WORDS = [
     },
     {
         "級別": "N5", "單字": "美味しい", "假名": "おいしい", "詞性": "形容詞", "中文意思": "美味的、好吃的", 
-        "例句": "このリンゴはとても美味しいです。", "例句假名": "このりんごはとてもおいしいです。", "例句中文": "這個蘋果非常好吃。"
+        "例句": "このリンゴは層も美味しいです。", "例句假名": "このりんごはとてもおいしいです。", "例句中文": "這個蘋果非常好吃。"
     },
     {
         "級別": "N5", "單字": "行く", "假名": "いく", "詞性": "動詞", "中文意思": "去", 
@@ -124,7 +124,7 @@ def get_taiwan_stock_info(symbol):
     try:
         ticker = yf.Ticker(symbol)
         return round(ticker.fast_info['last_price'], 2), ticker.info.get('shortName', symbol)
-    except: return 0.0, "查查無此股號"
+    except: return 0.0, "查無此股號"
 
 # 初始化持股狀態
 if "kara_list" not in st.session_state:
@@ -139,13 +139,27 @@ if "fish_list" not in st.session_state:
 if "learned_history_dict" not in st.session_state:
     st.session_state.learned_history_dict = {}
 
+# 測驗換題回呼函式（徹底解決 IndentationError 的核心設計）
+def generate_new_quiz():
+    st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
+    st.session_state.quiz_type = random.randint(0, 1)
+    correct_word = st.session_state.quiz_item
+    wrong_pool = [w for w in JAPANESE_WORDS if w["單字"] != correct_word["單字"]]
+    wrong_choices = random.sample(wrong_pool, min(len(wrong_pool), 3))
+    if st.session_state.quiz_type == 0:
+        choices = [correct_word["假名"]] + [w["假名"] for w in wrong_choices]
+    else:
+        choices = [correct_word["單字"]] + [w["單字"] for w in wrong_choices]
+    random.shuffle(choices)
+    st.session_state.quiz_choices = choices
+
 # =========================================================================
 # 🌐 左側功能選單
 # =========================================================================
 page = st.sidebar.radio("🌐 選擇網頁功能", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器", "🇯🇵 每日自動日文單字"])
 
 # -------------------------------------------------------------------------
-# 分頁三：🇯🇵 每日自動日文單字功能（徹底排除縮進錯誤與排版跑掉版本）
+# 分頁三：🇯🇵 每日自動日文單字功能（Callback 架構無錯版）
 # -------------------------------------------------------------------------
 if page == "🇯🇵 每日自動日文單字":
     st.title("🇯🇵 N3-N5 智慧日文隨身卡與測驗")
@@ -164,7 +178,7 @@ if page == "🇯🇵 每日自動日文單字":
             unique_key = f"{date_str}_{item['單字']}"
             is_saved = unique_key in st.session_state.learned_history_dict
 
-            # 1. 修正排版：級別彩色標籤獨立在最上面一行
+            # 級別彩色標籤獨立在最上面一行
             if item["級別"] == "N3": 
                 st.error(f"日檢分級： {item['級別']} ")
             elif item["級別"] == "N4": 
@@ -222,17 +236,5 @@ if page == "🇯🇵 每日自動日文單字":
         else:
             st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後，紀錄就會出現在這邊！")
 
-    # 2. 徹底重構並修復：日文小測驗分頁（完全對齊縮進空格）
+    # 📝 互動小測驗分頁（完全修復空行縮進 bug 結構）
     with tab_quiz:
-        st.subheader("📝 日文實力大考驗 (N3-N5)")
-        st.write("說明：系統將隨機從字庫挑選題目。回答後點擊「提交答案」即可核對！")
-        st.write("---")
-        
-        # 徹底校正：確保所有 if 和 else 下方的縮進程式塊格子數完全對齊
-        if "quiz_item" not in st.session_state:
-            st.session_state.quiz_item = random.choice(JAPANESE_WORDS)
-            st.session_state.quiz_type = random.randint(0, 1)
-            correct_word = st.session_state.quiz_item
-            wrong_pool = [w for w in JAPANESE_WORDS if w["單字"] != correct_word["單字"]]
-            wrong_choices = random.sample(wrong_pool, min(len(wrong_pool), 3))
-            if st.session_state.quiz_type == 0:
