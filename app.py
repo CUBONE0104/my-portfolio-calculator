@@ -17,11 +17,11 @@ REPO_NAME = "您的GitHub帳號/您的專案名稱"
 CSV_FILE_PATH = "history_data.csv"
 
 # =========================================================================
-# 📚 核心日文單字庫
+# 📚 核心日文單字庫（已全面修復「單字」繁體字 Key 錯誤）
 # =========================================================================
 JAPANESE_WORDS = [
     {
-        "級別": "N5", "單字": "学生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", 
+        "級別": "N5", "單字": "學生", "假名": "がくせい", "詞性": "名詞", "中文意思": "學生", 
         "例句": "私は学生です。", "例句假名": "わたしはがくせいです。", "例句中文": "我是學生。"
     },
     {
@@ -53,7 +53,7 @@ JAPANESE_WORDS = [
         "例句": "旅行の準備はもうできましたか。", "例句假名": "りょこうのじゅんびはもうできましたか。", "例句中文": "旅行的準備已經好了嗎？"
     },
     {
-        "級別": "N3", "单字": "必ず", "假名": "かならず", "詞性": "副詞", "中文意思": "必定、務必", 
+        "級別": "N3", "單字": "必ず", "假名": "かならず", "詞性": "副詞", "中文意思": "必定、務必", 
         "例句": "約束は必ず守ります。", "例句假名": "やくそくはかならずまもります。", "例句中文": "約定好的事我一定會遵守。"
     },
     {
@@ -66,15 +66,14 @@ JAPANESE_WORDS = [
     }
 ]
 
-# 需求 1：加上去重機制，自動過濾掉 st.session_state 裡已經學會的單字
 def get_fixed_daily_words(date_seed_str, learned_set):
     seed_num = int(date_seed_str.replace("-", ""))
     random.seed(seed_num)
     
-    # 過濾出「還沒學會」的單字庫
+    # 動態排除已經學會的單字
     available_words = [w for w in JAPANESE_WORDS if w["單字"] not in learned_set]
     
-    # 如果學太快導致剩下的字不夠 5 個，就自動拿原本的字庫來補，避免當機
+    # 防禦機制：若學完導致剩餘字數不足5，直接還原完整庫，避免出錯
     if len(available_words) < 5:
         available_words = JAPANESE_WORDS
         
@@ -135,7 +134,7 @@ def get_taiwan_stock_info(symbol):
         return round(ticker.fast_info['last_price'], 2), ticker.info.get('shortName', symbol)
     except: return 0.0, "查無此股號"
 
-# 初始化狀態
+# 初始化持股狀態
 if "kara_list" not in st.session_state:
     st.session_state.kara_list = [
         {"股號": "00631L", "股票名稱": "元大台灣50正2", "自訂產業備註": "核心槓桿", "即時股價": 0.0, "原始總成本(萬元)": 70.0, "持有股數(股)": 4000},
@@ -154,15 +153,15 @@ if "learned_history_dict" not in st.session_state:
 page = st.sidebar.radio("🌐 選擇網頁功能", ["👦 卡拉的資產計算器", "👧 小魚的資產投資計算器", "🇯🇵 每日自動日文單字"])
 
 # -------------------------------------------------------------------------
-# 分頁三：🇯🇵 每日自動日文單字功能 (新增測驗功能、優化語音版面、維持級別標籤)
+# 分頁三：🇯🇵 每日自動日文單字功能（徹底排除 KeyError 與語音條縮小優化版）
 # -------------------------------------------------------------------------
 if page == "🇯🇵 每日自動日文單字":
     st.title("🇯🇵 N3-N5 智慧日文隨身卡與測驗")
     
-    # 需求 3：將大功能切換改為三個小分頁（學習卡、已學會、小測驗）
+    # 功能大分頁
     tab_study, tab_list, tab_quiz = st.tabs(["📥 歷史單字隨身卡", "🎓 已學會單字庫", "📝 挑戰日文小測驗"])
     
-    # 從目前已學會字典中抽出所有的單字名稱，用來去重
+    # 建立已學會單字之集合
     learned_set = {v["單字"] for v in st.session_state.learned_history_dict.values()}
 
     with tab_study:
@@ -171,15 +170,15 @@ if page == "🇯🇵 每日自動日文單字":
         st.write(f"目前顯示為 **{selected_date.strftime('%Y 年 %m 月 %d 日')}** 的精選單字卡（自動去重）。")
         st.write("---")
 
-        # 傳入已學會集合進行過濾去重
+        # 傳入已學單字庫自動去重
         daily_words = get_fixed_daily_words(date_str, learned_set)
 
         for idx, item in enumerate(daily_words):
             unique_key = f"{date_str}_{item['單字']}"
             is_saved = unique_key in st.session_state.learned_history_dict
 
-            # 需求 2：維持 N3, N4, N5 經典彩色標籤
-            col_tag, col_title = st.columns([1, 5])
+            # 級別彩色標籤回歸
+            col_tag, col_title = st.columns([1, 6])
             with col_tag:
                 if item["級別"] == "N3": st.error(f" {item['級別']} ")
                 elif item["級別"] == "N4": st.warning(f" {item['級別']} ")
@@ -189,27 +188,27 @@ if page == "🇯🇵 每日自動日文單字":
             
             st.write(f"讀音假名：【 **{item['假名']}** 】")
             
-            # 需求 2：將單字語音播放條縮小版面（利用 st.columns 切出極窄區塊）
-            col_audio, _ = st.columns([1, 1])
-            with col_audio:
+            # 【優化：音訊播放條迷你版】利用大面積空白將音訊條向左壓縮，視覺上精緻一半以上！
+            col_audio_ui, col_audio_blank = st.columns([1, 1])
+            with col_audio_ui:
                 word_audio = text_to_speech_bytes(item['單字'])
                 if word_audio: st.audio(word_audio, format="audio/mp3")
 
             st.write(f"💡 **中文意思**： :blue[**{item['中文意思']}**]")
             
-            # 例句配置
+            # 黑色經典高對比例句
             st.write("📝 **實用例句：**")
             st.write(f"**{item['例句']}**")
             st.caption(f"（讀音：{item['例句假名']}）")
             st.write(f"➜ 中文：{item['例句中文']}")
             
-            # 需求 2：將例句語音播放條縮小版面
-            col_s_audio, _ = st.columns([1, 1])
-            with col_s_audio:
+            # 例句音訊播放條縮小版
+            col_sentence_ui, col_sentence_blank = st.columns([1, 1])
+            with col_sentence_ui:
                 sentence_audio = text_to_speech_bytes(item['例句'])
                 if sentence_audio: st.audio(sentence_audio, format="audio/mp3")
 
-            # 互動式學習勾選
+            # 互動式勾選記憶庫
             state_checkbox = st.checkbox("💡 我已熟記學會此單字", value=is_saved, key=f"check_{unique_key}")
             
             if state_checkbox and not is_saved:
@@ -233,9 +232,10 @@ if page == "🇯🇵 每日自動日文單字":
         else:
             st.info("這裡目前還空空的。在隨身卡勾選「我已熟記學會此單字」之後，紀錄就會出現在這邊！")
 
-    # 需求 3：全新的互動小測驗分頁
+    # 互動小測驗分頁
     with tab_quiz:
         st.subheader("📝 日文實力大考驗 (N3-N5)")
-        st.write("說明：系統將隨機從字庫挑選題目。回答後點擊「提交答案」即可核對！點擊右側選單或重新整理網頁可變更題目。")
+        st.write("說明：系統將隨機從字庫挑選題目。回答後點擊「提交答案」即可核對！")
         st.write("---")
         
+        if "quiz_item" not in st.session_state or st.button("🔄 換一題新測驗"):
